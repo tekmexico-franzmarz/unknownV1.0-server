@@ -11,8 +11,10 @@ mongoose.Promise = global.Promise;
 
 var passport = require("passport");
 var LocalStrategy = require('passport-local').Strategy;
+var FacebookStrategy=require("passport-facebook").Strategy;
 
 var login = require('./routes/login');
+var fbLogin = require('./routes/fb-login');
 var register = require('./routes/register');
 var users = require('./routes/users');
 var chat = require('./routes/chat');
@@ -41,12 +43,13 @@ app.use(bodyParser.urlencoded({
   extended: true
 }));
 app.use(cookieParser());
-app.use(express.static(path.join(__dirname, '../../Client-V1.0.0/client/dist')));
+app.use(express.static(path.join(__dirname, '../seed/dist')));
 
 app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, '../../Client-V1.0.0/client/dist/en/index.html'));
+  res.sendFile(path.join(__dirname, '../seed/dist/en/index.html'));
 });
 app.use('/api/login', login);
+app.use('/api/fb-login', fbLogin);
 app.use('/api/register', register);
 app.use('/api/users', users);
 app.use('/api/chat', chat);
@@ -58,7 +61,7 @@ passport.serializeUser(User.serializeUser());
 passport.deserializeUser(User.deserializeUser());
 
 //mongoose.connect('mongodb://localhost/chatDB-v1')
-mongoose.connect('mongodb://localhost/chatDB-v2')
+mongoose.connect('mongodb://localhost/unknown-v1')
   .then(() => console.log('connection successful'))
   .catch((err) => console.error(err));
 

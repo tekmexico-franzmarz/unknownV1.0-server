@@ -26,7 +26,7 @@ var UserSchema = new Schema({
         required: true,
     },
     locale: String,
-    status: String,
+    facebookId: String,
     contacts: [String],
     conversations: [{ type: Schema.Types.ObjectId, ref:"Conversations"}],
     notifications: [{typeNotif:String,from:String,senderId: Schema.Types.ObjectId,content:String,date:Number}],

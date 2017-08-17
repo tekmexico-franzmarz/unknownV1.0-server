@@ -1,17 +1,15 @@
 var jwt = require('jsonwebtoken');
 var passportJWT = require("passport-jwt");
+var fbOptions = require("../config/auth");
 var JwtStrategy = passportJWT.Strategy;
 
 var jwtOptions = {}
 jwtOptions.secretOrKey = 'chatserver';
 
-// load all the things we need
 var LocalStrategy = require('passport-local').Strategy;
 
-// load up the user model
 var User = require('../models/UserSchema');
 
-// expose this function to our app using module.exports
 module.exports = function (passport) {
 
     // =========================================================================
@@ -100,65 +98,14 @@ module.exports = function (passport) {
     // we are using named strategies since we have one for login and one for signup
     // by default, if there was no name, it would just be called 'local'
 
-    /* passport.use('local-login', new LocalStrategy({
-            // by default, local strategy uses username and password, we will override with email
-            usernameField: 'email',
-            passwordField: 'password',
-            passReqToCallback: true // allows us to pass back the entire request to the callback
-        },
-        function (req, email, password, done) { // callback with email and password from our form
-            // find a user whose email is the same as the forms email
-            // we are checking to see if the user trying to login already exists
-            User.findOne({
-                'username': req.body.email
-            }, function (err, user) {
-                //console.log("User=",user)
 
-                //console.log("Inside LOCAL-LOGIN || user.password=", user.password);
-                // if there are any errors, return the error before anything else
-                if (err)
-                    return done(err);
-
-                // if no user is found, return the message
-                if (!user)
-                    return done(null, false, {
-                        message: 'Incorrect username.'
-                    }); // req.flash is the way to set flashdata using connect-flash
-
-                // if the user is found but the password is wrong
-                if (!user.validPassword(req.body.password)) {
-                    //console.error("Wrong Password");
-                    return done(null, false, {
-                        message: 'Incorrect password.'
-                    }); // create the loginMessage and save it to session as flashdata
-                }
-
-                var payload = {
-                    id: user.id,
-                }
-                console.log(">>PAYLOAD: ", payload);
-                var token = jwt.sign(payload, jwtOptions.secretOrKey);
-
-                console.log(">> New Token ==> ", token);
-
-                user["token"] = token;
-
-                console.log(">>USER Obj to send to Client ==> ", user);
-
-                // all is well, return successful user
-                return done(null, user);
-            });
-
-        })); */
     passport.use('local-login', new LocalStrategy({
             // by default, local strategy uses username and password, we will override with email
             usernameField: 'email',
             passwordField: 'password',
             passReqToCallback: true // allows us to pass back the entire request to the callback
         },
-        function (req, email, password, done) { // callback with email and password from our form
-            // find a user whose email is the same as the forms email
-            // we are checking to see if the user trying to login already exists
+        function (req, email, password, done) {
             User.findOne({
                     'username': req.body.email
                 })
@@ -170,12 +117,8 @@ module.exports = function (passport) {
                     "participants": 1,
                     "conversationType": 1,
                     "conversationName": 1
-                })                
+                })
                 .exec((err, user) => {
-                    //console.log("User=", user)
-
-                    //console.log("Inside LOCAL-LOGIN || user.password=", user.password);
-                    // if there are any errors, return the error before anything else
                     if (err)
                         return done(err);
 
@@ -183,14 +126,12 @@ module.exports = function (passport) {
                     if (!user)
                         return done(null, false, {
                             message: 'Incorrect username.'
-                        }); // req.flash is the way to set flashdata using connect-flash
+                        });
 
-                    // if the user is found but the password is wrong
                     if (!user.validPassword(req.body.password)) {
-                        //console.error("Wrong Password");
                         return done(null, false, {
                             message: 'Incorrect password.'
-                        }); // create the loginMessage and save it to session as flashdata
+                        });
                     }
 
                     var payload = {
@@ -209,4 +150,30 @@ module.exports = function (passport) {
 
         }));
 
+    // Configure the Facebook strategy for use by Passport.
+    //
+    // OAuth 2.0-based strategies require a `verify` function which receives the
+    // credential (`accessToken`) for accessing the Facebook API on the user's
+    // behalf, along with the user's profile.  The function must invoke `cb`
+    // with a user object, which will be set at `req.user` in route handlers after
+    // authentication.
+    passport.use(new Strategy({
+            clientID: fbOptions.CLIENT_ID,
+            clientSecret: fbOptions.CLIENT_SECRET,
+            callbackURL: 'http://localhost:3000/fb-login/callback',
+            profileFields: ['id', 'displayName', 'photos', 'email']
+        },
+        function (accessToken, refreshToken, profile, cb) {
+            // In this example, the user's Facebook profile is supplied as the user
+            // record.  In a production-quality application, the Facebook profile should
+            // be associated with a user record in the application's database, which
+            // allows for account linking and authentication with other identity
+            // providers.
+            User.findOrCreate({
+                facebookId: profile.id
+            }, function (err, user) {
+                console.log(">>> user:", user);
+                return cb(err, user);
+            });
+        }));
 };
