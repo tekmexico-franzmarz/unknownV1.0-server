@@ -24,6 +24,11 @@
 !.vscode/launch.json
 !.vscode/extensions.json
 
+
+# Dependency directories
+node_modules/
+jspm_packages/
+
 # misc
 /.sass-cache
 /connect.lock

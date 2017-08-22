@@ -1,12 +1,14 @@
 var jwt = require('jsonwebtoken');
 var passportJWT = require("passport-jwt");
 var fbOptions = require("../config/auth");
+var mongoose = require('mongoose');
 var JwtStrategy = passportJWT.Strategy;
 
 var jwtOptions = {}
 jwtOptions.secretOrKey = 'chatserver';
 
 var LocalStrategy = require('passport-local').Strategy;
+var FacebookStrategy = require("passport-facebook").Strategy;
 
 var User = require('../models/UserSchema');
 
@@ -157,10 +159,11 @@ module.exports = function (passport) {
     // behalf, along with the user's profile.  The function must invoke `cb`
     // with a user object, which will be set at `req.user` in route handlers after
     // authentication.
-    passport.use(new Strategy({
+    passport.use('facebook', new FacebookStrategy({
             clientID: fbOptions.CLIENT_ID,
             clientSecret: fbOptions.CLIENT_SECRET,
-            callbackURL: 'http://localhost:3000/fb-login/callback',
+            /* callbackURL: 'http://localhost:4200/#/home', */
+            callbackURL: 'http://localhost:3000/api/fb-login/callback',
             profileFields: ['id', 'displayName', 'photos', 'email']
         },
         function (accessToken, refreshToken, profile, cb) {
@@ -169,11 +172,115 @@ module.exports = function (passport) {
             // be associated with a user record in the application's database, which
             // allows for account linking and authentication with other identity
             // providers.
-            User.findOrCreate({
-                facebookId: profile.id
-            }, function (err, user) {
-                console.log(">>> user:", user);
-                return cb(err, user);
-            });
+
+            /* console.log(">>>>>Inside Facebook strategy || accessToken=", accessToken); 
+            console.log(">>>>>Inside Facebook strategy || profile=", profile); */
+
+            if (profile.emails) {
+                User.findOne({
+                    $or: [{
+                            'facebook.id': profile.id
+                        },
+                        {
+                            'email': profile.emails[0].value
+                        }
+                    ]
+                }, function (err, user) {
+
+                    if (err) return done(err);
+
+                    if (user) {
+                        console.log("Inside Facebook Strategy | User had already registered. Updating accessToken...");
+
+                        User.update({
+                                email: user.email
+                            }, {
+                                'accessToken': accessToken
+                            },
+                            (err, data) => {
+                                if (err) {
+                                    console.log(err);
+                                    return data;
+                                } else {
+                                    return cb(err, user);
+                                }
+                            }
+                        );
+                    } else {
+                        console.log("Inside Facebook Strategy | Register through Facebook. Adding user to DB...");
+
+                        var newUser = new User();
+
+                        newUser.facebook.profileImage = `https://graph.facebook.com/${profile._json.id}/picture?width=480&height=480&access_token=${accessToken}`;
+                        newUser.facebook.id = profile._json.id;
+                        newUser.facebook.token = accessToken;
+                        newUser.facebook.email = profile._json.email;
+                        newUser.facebook.name = profile._json.name;
+
+                        newUser.username = newUser.facebook.name;
+                        newUser.fullName = newUser.facebook.name;
+                        newUser.profileImage = newUser.facebook.profileImage;
+                        newUser.email = newUser.facebook.email;
+
+                        newUser.confirmation_code = Math.random().toString(36).slice(2);
+
+                        newUser.save(function (err) {
+                            if (err) throw err;
+                            return cb(err, newUser);
+                        });
+                    }
+                });
+            } else {
+                User.findOne({
+                    $or: [{
+                            'facebook.id': profile.id
+                        }
+                    ]
+                }, function (err, user) {
+
+                    if (err) return done(err);
+
+                    if (user) {
+                        console.log("Inside Facebook Strategy | User had already registered. Updating accessToken...");
+
+                        User.update({
+                                email: user.email
+                            }, {
+                                'accessToken': accessToken
+                            },
+                            (err, data) => {
+                                if (err) {
+                                    console.log(err);
+                                    return data;
+                                } else {
+                                    return cb(err, user);
+                                }
+                            }
+                        );
+                    } else {
+                        console.log("Inside Facebook Strategy | Register through Facebook. Adding user to DB...");
+
+                        var newUser = new User();
+
+                        newUser.facebook.profileImage = `https://graph.facebook.com/${profile._json.id}/picture?width=480&height=480&access_token=${accessToken}`;
+                        newUser.facebook.id = profile._json.id;
+                        newUser.facebook.token = accessToken;
+                        newUser.facebook.email = "Private Email";
+                        newUser.facebook.name = profile._json.name;
+
+                        newUser.username = newUser.facebook.name;
+                        newUser.fullName = newUser.facebook.name;
+                        newUser.profileImage = newUser.facebook.profileImage;
+                        newUser.email = newUser.facebook.email;
+
+                        newUser.confirmation_code = Math.random().toString(36).slice(2);
+
+                        newUser.save(function (err) {
+                            if (err) throw err;
+                            return cb(err, newUser);
+                        });
+                    }
+                });
+            }
         }));
 };

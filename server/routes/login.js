@@ -9,4 +9,9 @@ router.post('/', passport.authenticate('local-login'),function(req,res){
     res.json(req.user.token);
 });
 
+router.post('/test',function(req,res){
+    console.log("Data from client",req.body);
+    res.json(req.body.test);
+});
+
 module.exports = router;

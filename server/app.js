@@ -5,7 +5,6 @@ var logger = require('morgan');
 var cookieParser = require('cookie-parser');
 var bodyParser = require('body-parser');
 
-
 var mongoose = require('mongoose');
 mongoose.Promise = global.Promise;
 
@@ -43,11 +42,12 @@ app.use(bodyParser.urlencoded({
   extended: true
 }));
 app.use(cookieParser());
-app.use(express.static(path.join(__dirname, '../seed/dist')));
+app.use(express.static(path.join(__dirname, '../../Client-V1.0.0/dist')));
 
 app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, '../seed/dist/en/index.html'));
+  res.sendFile(path.join(__dirname, '../../Client-V1.0.0/dist/index.html'));
 });
+
 app.use('/api/login', login);
 app.use('/api/fb-login', fbLogin);
 app.use('/api/register', register);

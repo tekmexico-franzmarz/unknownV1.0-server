@@ -1,9 +1,9 @@
 var mongoose = require('mongoose');
-var bcrypt   = require('bcrypt-nodejs');
+var bcrypt = require('bcrypt-nodejs');
 var Schema = mongoose.Schema;
 var passportLocalMongoose = require('passport-local-mongoose');
-var Conversations=require("./ConversationSchema");
-
+var Conversations = require("./ConversationSchema");
+/* 
 var UserSchema = new Schema({
     fullName: {
         type: String,
@@ -34,13 +34,84 @@ var UserSchema = new Schema({
     token: String,
     createdAt: Number,
     updatedAt: Number
-});
+}); */
 
-UserSchema.methods.generateHash = function(password) {
+/* var UserSchema = new Schema({
+    fullName: {
+        type: String,
+        required: true,
+        trim: true
+    },
+    username: {
+        type: String,
+        required: true,
+        trim: true,
+        lowercase: true
+    },
+    email: {
+        type: String,
+        required: true,
+        unique: true
+    },
+    facebookId: String,
+    profileImage: String,
+    accessToken: String,
+}); */
+
+var UserSchema = new Schema({
+    fullName: {
+        type: String,
+        trim: true
+    },
+    email: {
+        type: String,
+        unique: true,
+        trim: true
+    },
+    password: {
+        type: String,
+        trim: true
+    },
+    confirmation_code: String,
+    confirmed: {
+        type: Boolean,
+        default: false
+    },
+    username: {
+        type: String,
+        required: true,
+        trim: true,
+        lowercase: true
+    },
+    profileImage: String,
+    facebook: {
+        id: String,
+        token: String,
+        email: String,
+        name: String,
+        profileImage: String,
+    },
+    twitter: {
+        id: String,
+        token: String,
+        email: String,
+        name: String,
+        profileImage: String,
+    },
+    instagram: {
+        id: String,
+        token: String,
+        email: String,
+        name: String,
+        profileImage: String,
+    }
+}, { timestamps: true });
+
+UserSchema.methods.generateHash = function (password) {
     return bcrypt.hashSync(password, bcrypt.genSaltSync(8), null);
 };
 
-UserSchema.methods.validPassword = function(password) {
+UserSchema.methods.validPassword = function (password) {
     return bcrypt.compareSync(password, this.password);
 };
 
