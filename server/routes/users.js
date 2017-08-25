@@ -213,6 +213,24 @@ router.post("/getMyProfile", (req, res, next) => {
       return res.status(200).json(user);
     });
   }
+  switch (req.body.origin) {
+    case 'fb':
+      User.findOne({
+        'facebook.token': req.body.token
+      }, (err, user) => {
+        if (err) return err;
+        return res.status(200).json(user);
+      });
+      break;
+      case 'tw':
+      User.findOne({
+        'twitter.id': req.body.token
+      }, (err, user) => {
+        if (err) return err;
+        return res.status(200).json(user);
+      });
+      break;
+  }
 });
 
 module.exports = router;

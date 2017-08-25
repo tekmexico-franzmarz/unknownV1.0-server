@@ -1,6 +1,6 @@
 var jwt = require('jsonwebtoken');
 var passportJWT = require("passport-jwt");
-var fbOptions = require("../config/auth");
+var loginOptions = require("../config/auth");
 var mongoose = require('mongoose');
 var JwtStrategy = passportJWT.Strategy;
 
@@ -9,6 +9,8 @@ jwtOptions.secretOrKey = 'chatserver';
 
 var LocalStrategy = require('passport-local').Strategy;
 var FacebookStrategy = require("passport-facebook").Strategy;
+var TwitterStrategy = require("passport-twitter").Strategy;
+var InstagramStrategy = require("passport-instagram").Strategy;
 
 var User = require('../models/UserSchema');
 
@@ -160,8 +162,8 @@ module.exports = function (passport) {
     // with a user object, which will be set at `req.user` in route handlers after
     // authentication.
     passport.use('facebook', new FacebookStrategy({
-            clientID: fbOptions.CLIENT_ID,
-            clientSecret: fbOptions.CLIENT_SECRET,
+            clientID: loginOptions.FB_CLIENT_ID,
+            clientSecret: loginOptions.FB_CLIENT_SECRET,
             /* callbackURL: 'http://localhost:4200/#/home', */
             callbackURL: 'http://localhost:3000/api/fb-login/callback',
             profileFields: ['id', 'displayName', 'photos', 'email']
@@ -212,6 +214,7 @@ module.exports = function (passport) {
                         var newUser = new User();
 
                         newUser.facebook.profileImage = `https://graph.facebook.com/${profile._json.id}/picture?width=480&height=480&access_token=${accessToken}`;
+                        newUser.facebook.profileImageThumb = `https://graph.facebook.com/${profile._json.id}/picture?width=80&height=80&access_token=${accessToken}`;
                         newUser.facebook.id = profile._json.id;
                         newUser.facebook.token = accessToken;
                         newUser.facebook.email = profile._json.email;
@@ -220,6 +223,7 @@ module.exports = function (passport) {
                         newUser.username = newUser.facebook.name;
                         newUser.fullName = newUser.facebook.name;
                         newUser.profileImage = newUser.facebook.profileImage;
+                        newUser.profileImageThumb = newUser.facebook.profileImageThumb;
                         newUser.email = newUser.facebook.email;
 
                         newUser.confirmation_code = Math.random().toString(36).slice(2);
@@ -233,9 +237,8 @@ module.exports = function (passport) {
             } else {
                 User.findOne({
                     $or: [{
-                            'facebook.id': profile.id
-                        }
-                    ]
+                        'facebook.id': profile.id
+                    }]
                 }, function (err, user) {
 
                     if (err) return done(err);
@@ -263,6 +266,7 @@ module.exports = function (passport) {
                         var newUser = new User();
 
                         newUser.facebook.profileImage = `https://graph.facebook.com/${profile._json.id}/picture?width=480&height=480&access_token=${accessToken}`;
+                        newUser.facebook.profileImageThumb = `https://graph.facebook.com/${profile._json.id}/picture?width=80&height=80&access_token=${accessToken}`;
                         newUser.facebook.id = profile._json.id;
                         newUser.facebook.token = accessToken;
                         newUser.facebook.email = "Private Email";
@@ -271,6 +275,7 @@ module.exports = function (passport) {
                         newUser.username = newUser.facebook.name;
                         newUser.fullName = newUser.facebook.name;
                         newUser.profileImage = newUser.facebook.profileImage;
+                        newUser.profileImageThumb = newUser.facebook.profileImageThumb;
                         newUser.email = newUser.facebook.email;
 
                         newUser.confirmation_code = Math.random().toString(36).slice(2);
@@ -283,4 +288,186 @@ module.exports = function (passport) {
                 });
             }
         }));
+
+    passport.use('twitter', new TwitterStrategy({
+            consumerKey: loginOptions.TW_CLIENT_ID,
+            consumerSecret: loginOptions.TW_CLIENT_SECRET,
+            callbackURL: 'http://localhost:3000/api/tw-login/callback',
+        },
+        function (token, tokenSecret, profile, cb) {
+            console.log(">>>>>>>>>> Inside TWITTER strategy || profile=", profile._json);
+            if (profile._json.email) {
+                User.findOne({
+                    $or: [{
+                            'twitter.id': profile._json.id
+                        },
+                        {
+                            'email': profile._json.email
+                        }
+                    ]
+                }, function (err, user) {
+
+                    if (err) return done(err);
+
+                    if (user) {
+                        console.log("Inside Twitter Strategy | User had already registered. Updating accessToken...", user);
+
+                        return cb(err, user);
+                    } else {
+                        console.log("Inside Twitter Strategy | Register through Twitter. Adding user to DB...");
+
+                        var newUser = new User();
+
+                        newUser.twitter.profileImage = profile._json.profile_image_url;
+                        newUser.twitter.profileImageThumb = profile._json.profile_image_url;
+                        newUser.twitter.id = profile._json.id;
+                        newUser.twitter.email = "Private email";
+                        newUser.twitter.name = profile._json.name;
+
+                        newUser.username = profile._json.screen_name;
+                        newUser.fullName = newUser.twitter.name;
+                        newUser.profileImage = newUser.twitter.profileImage;
+                        newUser.profileImageThumb = newUser.twitter.profileImageThumb;
+                        newUser.email = newUser.twitter.email;
+
+                        newUser.confirmation_code = Math.random().toString(36).slice(2);
+
+                        newUser.save(function (err) {
+                            if (err) throw err;
+                            return cb(err, newUser);
+                        });
+                    }
+                });
+            } else {
+                User.findOne({
+                    $or: [{
+                        'twitter.id': profile._json.id
+                    }]
+                }, function (err, user) {
+
+                    if (err) return done(err);
+
+                    if (user) {
+                        console.log("Inside Facebook Strategy | User had already registered. Updating accessToken...");
+                        return cb(err, user);
+                        
+                    } else {
+                        console.log("Inside Facebook Strategy | Register through Facebook. Adding user to DB...");
+
+                        var newUser = new User();
+
+                        newUser.twitter.profileImage = profile._json.profile_image_url;
+                        newUser.twitter.profileImageThumb = profile._json.profile_image_url;
+                        newUser.twitter.id = profile._json.id;
+                        newUser.twitter.email = "Private email";
+                        newUser.twitter.name = profile._json.name;
+
+                        newUser.username = profile._json.screen_name;
+                        newUser.fullName = newUser.twitter.name;
+                        newUser.profileImage = newUser.twitter.profileImage;
+                        newUser.profileImageThumb = newUser.twitter.profileImageThumb;
+                        newUser.email = newUser.twitter.email;
+
+                        newUser.confirmation_code = Math.random().toString(36).slice(2);
+
+                        newUser.save(function (err) {
+                            if (err) throw err;
+                            return cb(err, newUser);
+                        });
+                    }
+                });
+            }
+        }
+    ));
+
+    passport.use('instagram', new InstagramStrategy({
+            consumerKey: loginOptions.INST_CLIENT_ID,
+            consumerSecret: loginOptions.INST_CLIENT_SECRET,
+            callbackURL: 'http://localhost:3000/api/inst-login/callback',
+        },
+        function (token, tokenSecret, profile, cb) {
+            console.log(">>>>>>>>>> Inside INSTAGRAM strategy || profile=", profile._json);
+            if (profile._json.email) {
+                User.findOne({
+                    $or: [{
+                            'instagram.id': profile._json.id
+                        },
+                        {
+                            'email': profile._json.email
+                        }
+                    ]
+                }, function (err, user) {
+
+                    if (err) return done(err);
+
+                    if (user) {
+                        console.log("Inside Twitter Strategy | User had already registered. Updating accessToken...", user);
+
+                        return cb(err, user);
+                    } else {
+                        console.log("Inside Twitter Strategy | Register through Twitter. Adding user to DB...");
+
+                        var newUser = new User();
+
+                        newUser.twitter.profileImage = profile._json.profile_image_url;
+                        newUser.twitter.profileImageThumb = profile._json.profile_image_url;
+                        newUser.twitter.id = profile._json.id;
+                        newUser.twitter.email = "Private email";
+                        newUser.twitter.name = profile._json.name;
+
+                        newUser.username = profile._json.screen_name;
+                        newUser.fullName = newUser.twitter.name;
+                        newUser.profileImage = newUser.twitter.profileImage;
+                        newUser.profileImageThumb = newUser.twitter.profileImageThumb;
+                        newUser.email = newUser.twitter.email;
+
+                        newUser.confirmation_code = Math.random().toString(36).slice(2);
+
+                        newUser.save(function (err) {
+                            if (err) throw err;
+                            return cb(err, newUser);
+                        });
+                    }
+                });
+            } else {
+                User.findOne({
+                    $or: [{
+                        'twitter.id': profile._json.id
+                    }]
+                }, function (err, user) {
+
+                    if (err) return done(err);
+
+                    if (user) {
+                        console.log("Inside Facebook Strategy | User had already registered. Updating accessToken...");
+                        return cb(err, user);
+                        
+                    } else {
+                        console.log("Inside Facebook Strategy | Register through Facebook. Adding user to DB...");
+
+                        var newUser = new User();
+
+                        newUser.twitter.profileImage = profile._json.profile_image_url;
+                        newUser.twitter.profileImageThumb = profile._json.profile_image_url;
+                        newUser.twitter.id = profile._json.id;
+                        newUser.twitter.email = "Private email";
+                        newUser.twitter.name = profile._json.name;
+
+                        newUser.username = profile._json.screen_name;
+                        newUser.fullName = newUser.twitter.name;
+                        newUser.profileImage = newUser.twitter.profileImage;
+                        newUser.profileImageThumb = newUser.twitter.profileImageThumb;
+                        newUser.email = newUser.twitter.email;
+
+                        newUser.confirmation_code = Math.random().toString(36).slice(2);
+
+                        newUser.save(function (err) {
+                            if (err) throw err;
+                            return cb(err, newUser);
+                        });
+                    }
+                });
+            }
+        }
+    ));
 };

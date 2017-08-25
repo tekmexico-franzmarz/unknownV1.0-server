@@ -14,6 +14,7 @@ var FacebookStrategy=require("passport-facebook").Strategy;
 
 var login = require('./routes/login');
 var fbLogin = require('./routes/fb-login');
+var twLogin = require('./routes/tw-login');
 var register = require('./routes/register');
 var users = require('./routes/users');
 var chat = require('./routes/chat');
@@ -50,6 +51,7 @@ app.get('/', (req, res) => {
 
 app.use('/api/login', login);
 app.use('/api/fb-login', fbLogin);
+app.use('/api/tw-login', twLogin);
 app.use('/api/register', register);
 app.use('/api/users', users);
 app.use('/api/chat', chat);

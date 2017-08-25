@@ -84,12 +84,14 @@ var UserSchema = new Schema({
         lowercase: true
     },
     profileImage: String,
+    profileImageThumb: String,
     facebook: {
         id: String,
         token: String,
         email: String,
         name: String,
         profileImage: String,
+        profileImageThumb: String,
     },
     twitter: {
         id: String,
@@ -105,7 +107,9 @@ var UserSchema = new Schema({
         name: String,
         profileImage: String,
     }
-}, { timestamps: true });
+}, {
+    timestamps: true
+});
 
 UserSchema.methods.generateHash = function (password) {
     return bcrypt.hashSync(password, bcrypt.genSaltSync(8), null);
